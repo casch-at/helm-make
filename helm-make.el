@@ -302,26 +302,17 @@ targets, and hence no `defcustom'."
           (const :tag "Default" default)
           (const :tag "make -qp" qp)))
 
-(defun helm--make-makefile-exists (base-dir &optional dir-list)
+(defun helm--make-makefile-exists (dir)
   "Check if one of `helm-make-makefile-names' and `helm-make-ninja-filename'
- exist in BASE-DIR.
+ exist in DIR.
 
 Returns the absolute filename to the Makefile, if one exists,
-otherwise nil.
-
-If DIR-LIST is non-nil, also search for `helm-make-makefile-names' and
-`helm-make-ninja-filename'."
-  (let* ((default-directory (file-truename base-dir))
-         (makefiles
-          (progn
-            (unless (and dir-list (listp dir-list))
-              (setq dir-list (list "")))
-            (let (result)
-              (dolist (dir dir-list)
-                (dolist (makefile `(,@helm-make-makefile-names ,helm-make-ninja-filename))
-                  (push (expand-file-name makefile dir) result)))
-              (reverse result))))
-         (makefile (cl-find-if 'file-exists-p makefiles)))
+otherwise nil."
+  (let* ((makefile (cl-find-if 'file-exists-p
+                               (let (result)
+                                 (dolist (makefile `(,@helm-make-makefile-names ,helm-make-ninja-filename))
+                                   (push (expand-file-name makefile dir) result))
+                                 (reverse result)))))
     (when makefile
       (cond
         ((string-match "build\.ninja$" makefile)
@@ -439,16 +430,11 @@ You can specify an additional directory to search for a makefile by
 setting the buffer local variable `helm-make-build-dir'."
   (interactive "P")
   (require 'projectile)
-  (let ((makefile (helm--make-makefile-exists
-                   (projectile-project-root)
-                   (if (and (stringp helm-make-build-dir)
-                            (not (string-match-p "\\`[ \t\n\r]*\\'" helm-make-build-dir)))
-                       `(,helm-make-build-dir "" "build")
-                     `(,@helm-make-build-dir "" "build")))))
-    (if (not makefile)
-        (error "No build file found for project %s" (projectile-project-root))
-      (setq helm-make-command (helm--make-construct-command arg makefile))
-      (helm--make makefile))))
+  (let ((makefile (helm--make-makefile-exists (projectile-project-root))):)
+    (unless (not makefile)
+      (error "No build file found for project %s" (projectile-project-root)))
+    (setq helm-make-command (helm--make-construct-command arg makefile))
+    (helm--make makefile)))
 
 (defvar project-roots)
 
