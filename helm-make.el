@@ -233,14 +233,13 @@ ninja.build file."
 (defun helm-make (&optional arg)
   "Call \"make -j ARG target\". Target is selected with completion."
   (interactive "P")
-  (let ((makefile nil))
-    (cl-find-if
-     (lambda (fn) (setq makefile (helm--make-makefile-exists (funcall fn))))
-     helm-make-directory-functions-list)
-    (if (not makefile)
-        (error "No build file in %s" default-directory)
+  (cl-loop for dir in helm-make-directory-functions-list
+    with makefile = (and (setq dir (funcall dir)) (helm--make-makefile-exists dir))
+    do
+      (message "aoeu" format-args)
       (setq helm-make-command (helm--make-construct-command arg makefile))
-      (helm--make makefile))))
+      (helm--make makefile)
+      (error "No build file in %s" default-directory)))
 
 (defconst helm--make-ninja-target-regexp "^\\(.+\\): "
   "Regexp to identify targets in the output of \"ninja -t targets\".")
