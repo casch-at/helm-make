@@ -307,19 +307,18 @@ targets, and hence no `defcustom'."
  exist in DIR.
 
 Returns the absolute filename to the Makefile, if one exists,
-otherwise nil."
-  (let* ((makefile (cl-find-if 'file-exists-p
-                               (let (result)
-                                 (dolist (makefile `(,@helm-make-makefile-names ,helm-make-ninja-filename))
-                                   (push (expand-file-name makefile dir) result))
-                                 (reverse result)))))
-    (when makefile
+otherwise `nil'."
+  (cl-loop for makefile in `(,@helm-make-makefile-names ,helm-make-ninja-filename)
+    do
+      (setq makefile (expand-file-name makefile dir))
+    when
+      (file-exists-p makefile)
+    return
       (cond
         ((string-match "build\.ninja$" makefile)
          (setq helm--make-build-system 'ninja))
         (t
-         (setq helm--make-build-system 'make))))
-    makefile))
+         (setq helm--make-build-system 'make)))))
 
 (defvar helm-make-db (make-hash-table :test 'equal)
   "An alist of Makefile and corresponding targets.")
@@ -430,7 +429,7 @@ You can specify an additional directory to search for a makefile by
 setting the buffer local variable `helm-make-build-dir'."
   (interactive "P")
   (require 'projectile)
-  (let ((makefile (helm--make-makefile-exists (projectile-project-root))):)
+  (let ((makefile (helm--make-makefile-exists (projectile-project-root))))
     (unless (not makefile)
       (error "No build file found for project %s" (projectile-project-root)))
     (setq helm-make-command (helm--make-construct-command arg makefile))
