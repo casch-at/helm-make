@@ -235,7 +235,9 @@ ninja.build file."
   (interactive "P")
   (let ((makefile nil))
     (cl-find-if
-     (lambda (fn) (setq makefile (helm--make-makefile-exists (funcall fn))))
+     (lambda (fn) (setq makefile (let ((dir (funcall fn)))
+                                   (when dir
+                                     (helm--make-makefile-exists dir)))))
      helm-make-directory-functions-list)
     (if (not makefile)
         (error "No build file in %s" default-directory)
